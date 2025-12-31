@@ -4,8 +4,11 @@ import streamlit as st
 import os
 import tempfile
 import datetime
+import math
 
 st.title("SnipVid")
+no_cols = 3
+
 
 col1, col2 = st.columns([1, 1.2])
 
@@ -46,8 +49,9 @@ with col2:
             start_time = st.session_state[f"start_{i}"]
             end_time = st.session_state[f"end_{i}"]
             if start_time >= end_time:
-                invalid_str = "Invalid time given and clip won't be created...."
-            st.write(f"For clip number {i+1}, start and end time are '{start_time}' and '{end_time}'." + f"{invalid_str}")
+                invalid_str = "Invalid time given for clip number {i+1} and clip won't be created...."
+                st.write(invalid_str)
+            # st.write(f"For clip number {i+1}, start and end time are '{start_time}' and '{end_time}'." + f"{invalid_str}")
 
 st.divider()
 
@@ -73,19 +77,32 @@ if st.button("Create Clip(s)"):
                 # st.video(video_bytes, width=200)
 
             output_filename = clip_name + "_" + str(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")) + str(start_time) + str(end_time) + ".mp4"
-            output_filepath = os.path.join(os.getcwd(), "PlayIQ", "webpage", "Utility", "Video Clips", output_filename)
+            output_filepath = os.path.join(os.getcwd(), "webpage", "Utility", "Video Clips", output_filename)
             trimmed_clip.write_videofile(output_filepath)
         else:
             st.write("Enter number of clips and their respective cut times....")
 
-        clip.close()
-        trimmed_clip.close()
+        # clip.close()
+        # trimmed_clip.close()
 
 if clip_name:
-    video_clips_folder = os.path.join(os.getcwd(), "PlayIQ", "webpage", "Utility", "Video Clips")
+    video_clips_folder = os.path.join(os.getcwd(), "webpage", "Utility", "Video Clips")
     all_files_url = os.scandir(video_clips_folder)
     req_clips_url = []
     for file in all_files_url: 
         if clip_name in file.name and file.is_dir()==False:
             req_clips_url.append(video_clips_folder + "\\" + file.name)
-    st.write(req_clips_url)
+    # st.write(req_clips_url)
+
+    total_vids = len(req_clips_url)
+    max_rows = math.ceil(no_cuts / no_cols)
+    cols_iter = st.columns(no_cols)
+
+    no_vids = 0 
+    for r in range(max_rows):
+        cols = st.columns(no_cols)
+        for c in range(no_cols):
+            if no_vids < total_vids:
+                with cols[c]:
+                    st.video(req_clips_url[no_vids])
+                no_vids += 1
