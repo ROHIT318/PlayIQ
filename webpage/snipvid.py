@@ -3,6 +3,7 @@ from moviepy.video.fx import MultiplySpeed
 import streamlit as st
 import os
 import tempfile
+import datetime
 
 st.title("SnipVid")
 
@@ -55,25 +56,36 @@ if st.button("Create Clip(s)"):
     output_file = ""
 
     for i in range(no_cuts):
+
+        video_columns = st.columns(no_cuts)
+
         if temp_filename and no_cuts and st.session_state[f"start_{i}"]:
-            clip = VideoFileClip(temp_filename)
+            clip = VideoFileClip(temp_filename, audio=False)
+            # clip = VideoFileClip(vid.getvalue())
             start_time = st.session_state[f"start_{i}"]
             end_time = st.session_state[f"end_{i}"]
-            trimmed_clip = clip.subclipped(start_time, start_time+((start_time-end_time)*2))
+            trimmed_clip = clip.subclipped(start_time, start_time+((end_time-start_time)*2))
             trimmed_clip = MultiplySpeed(2).apply(trimmed_clip)
 
             with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmpout:
                 trimmed_clip.write_videofile(tmpout.name, audio=False)
                 video_bytes = open(tmpout.name, "rb").read()
-                st.video(video_bytes)
+                # st.video(video_bytes, width=200)
+
+            output_filename = clip_name + "_" + str(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")) + str(start_time) + str(end_time) + ".mp4"
+            output_filepath = os.path.join(os.getcwd(), "PlayIQ", "webpage", "Utility", "Video Clips", output_filename)
+            trimmed_clip.write_videofile(output_filepath)
         else:
             st.write("Enter number of clips and their respective cut times....")
 
-            # trimmed_clip.write_videofile(output_file)
+        clip.close()
+        trimmed_clip.close()
 
-    # for i in range()
-
-
-# # Close the clips
-# clip.close()
-# trimmed_clip.close()
+if clip_name:
+    video_clips_folder = os.path.join(os.getcwd(), "PlayIQ", "webpage", "Utility", "Video Clips")
+    all_files_url = os.scandir(video_clips_folder)
+    req_clips_url = []
+    for file in all_files_url: 
+        if clip_name in file.name and file.is_dir()==False:
+            req_clips_url.append(video_clips_folder + "\\" + file.name)
+    st.write(req_clips_url)
