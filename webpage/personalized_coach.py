@@ -17,16 +17,28 @@ def call_chat_model(msg: str) -> Str:
     res_index = np.random.randint(0,len(res))
     return res[res_index]
 
+def get_stream_obj(input: str):
+    for ch in input:
+        yield ch
+        time.sleep(0.1)
+
 st.title("Your Personalized Coach")
 with st.container(border=True):
 
     with st.chat_message('assistant'):
         st.write("Hello, How can I help you?")
 
+    total_msgs = len(st.session_state.messages)
+    i=0
     for msg in st.session_state.messages:
-        with st.chat_message(msg['role']):
-            st.write(msg['content'])
-            # time.sleep(5)
+        if i==total_msgs-1 and msg['role']=='assistant':
+            with st.chat_message(msg['role']):
+                st.write_stream(get_stream_obj(msg['content']), cursor='||')
+        else:
+            with st.chat_message(msg['role']):
+                st.write(msg['content'])
+            i+=1
+                # time.sleep(5)
 
     if user_msg := st.chat_input("What is up?"):
         asst_msg = call_chat_model(user_msg)
