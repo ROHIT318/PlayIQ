@@ -13,10 +13,10 @@ def snipvid_page():
 
     col1, col2 = st.columns([1, 1.2])
 
-    if os.path.join(os.getcwd(), "Utility") == False:
+    if os.path.exists(os.getcwd(), "Utility") == False:
         os.mkdir(os.path.join(os.getcwd(), "Utility"))
 
-    if os.path.join(os.getcwd()+"\\Utility\\", "Video Clips") == False:
+    if os.path.exists(os.getcwd()+"\\Utility\\", "Video Clips") == False:
         os.mkdir(os.path.join(os.getcwd()+"\\Utility\\", "Video Clips"))
 
     with col1:
