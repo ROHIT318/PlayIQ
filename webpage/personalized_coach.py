@@ -5,6 +5,12 @@ import numpy as np
 import time
 import os
 import datetime
+import requests
+from dotenv import load_dotenv
+
+load_dotenv()
+
+BASE_URL = os.getenv('BASE_URL')
 
 chat_media_path = os.path.join(os.getcwd(), "webpage", "utility", "chat_media")
 if os.path.exists(chat_media_path) == False:
@@ -61,7 +67,8 @@ with st.container(border=True):
                 # time.sleep(5)
 
     if user_msg := st.chat_input("What is up?", accept_file='multiple', file_type=['jpg', 'png', 'jpeg', 'mp4'], ):
-        asst_msg = call_chat_model(user_msg.text)
+        # asst_msg = call_chat_model(user_msg.text)
+        asst_msg = requests.get(f'{BASE_URL}/call_chat_model/{user_msg.text}').content.decode('utf-8')
 
         media_file_path = [] 
         for file in user_msg["files"]:
