@@ -9,10 +9,14 @@ import requests
 from dotenv import load_dotenv
 import base64
 import streamlit.components.v1 as components
+import mimetypes
 
 load_dotenv()
 
 BASE_URL = os.getenv('BASE_URL')
+USER_AVATAR = os.getenv('USER_AVATAR')
+ASSISTANT_AVATAR = os.getenv('ASSISTANT_AVATAR')
+
 
 chat_media_path = os.path.join(os.getcwd(), "webpage", "utility")
 if os.path.exists(chat_media_path) == False:
@@ -20,6 +24,9 @@ if os.path.exists(chat_media_path) == False:
     os.mkdir(os.path.join(os.getcwd(), "webpage", "utility", "chat_media"))
     os.mkdir(os.path.join(os.getcwd(), "webpage", "utility", "chat_media", "images"))
     os.mkdir(os.path.join(os.getcwd(), "webpage", "utility", "chat_media", "videos"))
+
+img_media_path = os.path.join(os.getcwd(), "webpage", "utility", "chat_media", "images")
+vid_media_path = os.path.join(os.getcwd(), "webpage", "utility", "chat_media", "videos")
 
 
 st.markdown("""
@@ -32,7 +39,9 @@ st.markdown("""
 
 .chat-row {
     display: flex;
+    align-items: flex-end;
     width: 100%;
+    gap: 8px;
 }
 
 .chat-row.user {
@@ -41,6 +50,14 @@ st.markdown("""
 
 .chat-row.assistant {
     justify-content: flex-start;
+}
+            
+.avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
 }
 
 .chat-bubble {
@@ -77,7 +94,7 @@ st.markdown("""
 
 
 if "messages" not in st.session_state:
-    st.session_state.messages = []
+    st.session_state.messages = [{'role': 'assistant', 'content': 'Hello, How can I help you?', 'media_file_path': []}]
 
 def call_chat_model(msg: str) -> str:
     res = [
@@ -94,29 +111,29 @@ def get_stream_obj(input: str):
         yield ch
         time.sleep(0.1)
 
+def media_to_base64(path):
+    mime_type, _ = mimetypes.guess_type(path)
+    with open(path, "rb") as f:
+        encoded = base64.b64encode(f.read()).decode()
+    return f"data:{mime_type};base64,{encoded}"
+
+# Kept for testing purpose
+# img_path = os.path.join(os.getcwd(), "webpage", "Utility", "chat_media", "images", "test.jpg")
+# img_base64 = img_to_base64(img_path)
+# st.markdown(
+#     f'<img src="{img_base64}" />',
+#     unsafe_allow_html=True
+# )
+
+
 st.title("Your Personalized Coach")
 with st.container(border=True):
 
-    with st.chat_message('assistant'):
-        st.write("Hello, How can I help you?")
+    # with st.chat_message('assistant'):
+    #     st.write("Hello, How can I help you?")
 
     total_msgs = len(st.session_state.messages)
     i=0
-    # for i, msg in enumerate(st.session_state.messages):
-    #     if i==total_msgs and msg['role']=='assistant':
-    #         with st.chat_message(msg['role']):
-    #             st.write_stream(get_stream_obj(msg['content']), cursor='||')
-    #     else:
-    #         with st.chat_message(msg['role']):
-    #             st.write(msg['content'])
-    #             if msg['role']!='assistant' and len(msg['media_file_path']) != 0:
-    #                 for media_file_path in msg['media_file_path']:
-    #                     if media_file_path.lower().endswith('.mp4'):
-    #                         st.video(media_file_path, width=200)
-    #                     elif media_file_path.lower().endswith(('.jpg', '.jpeg', 'png')):
-    #                         st.image(media_file_path, width=200)
-    #     i+=1
-    #             # time.sleep(5)
 
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
 
@@ -128,42 +145,44 @@ with st.container(border=True):
         bubble_html = ""
 
         # 1️⃣ MEDIA FIRST (on top)
-        # for media in media_files:
-        #     filename = os.path.basename(media)
+        for media in media_files:
+            print(media)
+            # filename = os.path.basename(media)
+            img_base64 = media_to_base64(media)
+            if media.lower().endswith((".jpg", ".jpeg", ".png")):
+                bubble_html += f'<img src="{img_base64}" style="width:80%; border-radius:12px; margin-bottom:6px;" />'                    
 
-        #     if media.lower().endswith((".jpg", ".jpeg", ".png")):
-        #         bubble_html += f"""
-        #         <img src="data:image/png;base64,{base64.b64encode(open(media, "rb").read()).decode()}"
-        #             style="width:100%; border-radius:12px; margin-bottom:6px;" />
-        #         """
-
-        #     elif media.lower().endswith(".mp4"):
-        #         bubble_html += f"""
-        #             <video controls style="width:100%; border-radius:12px;">
-        #                 <source src="{media}" type="video/mp4">
-        #             </video>
-        #         """
-
-        #     elif media.lower().endswith(".pdf"):
-        #         bubble_html += f"""
-        #         <div class="file-card">📄 {filename}</div>
-        #         """
+            elif media.lower().endswith(".mp4"):
+                video_base64 = media_to_base64(media)
+                bubble_html += f'<video width="200" controls><source src="{video_base64}" type="video/mp4"></video>'
 
         # 2️⃣ TEXT CAPTION (below media)
         if content:
             bubble_html += f"<div>{content}</div>"
 
-        st.markdown(
-            f"""
-            <div class="chat-row {role}">
-                <div class="chat-bubble {role}">
-                    <img src="{media_files[0]}"/>
-                    # {bubble_html}
+        avatar = USER_AVATAR if role == "user" else ASSISTANT_AVATAR
+
+        if role == "assistant":
+            html = f"""
+            <div class="chat-row assistant">
+                <img class="avatar" src="{avatar}" />
+                <div class="chat-bubble assistant">
+                    {bubble_html}
                 </div>
             </div>
             """
-            , unsafe_allow_html=True
-        )
+        else:
+            html = f"""
+            <div class="chat-row user">
+                <div class="chat-bubble user">
+                    {bubble_html}
+                </div>
+                <img class="avatar" src="{avatar}" />
+            </div>
+            """
+
+        st.markdown(html, unsafe_allow_html=True)
+
 
     st.markdown('</div>', unsafe_allow_html=True)
 
