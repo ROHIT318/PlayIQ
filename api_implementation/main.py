@@ -4,14 +4,20 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 import numpy as np
 import os
 from dotenv import load_dotenv
+from langchain_huggingface import HuggingFaceEndpoint
+from langchain_huggingface import ChatHuggingFace
+from langchain_core.messages import HumanMessage
 
 load_dotenv()
 os.environ["GOOGLE_API_KEY"] = os.getenv('GOOGLE_API_KEY')
+HUGGINGFACEHUB_API_TOKEN = os.getenv('HUGGINGFACEHUB_API_TOKEN')
+os.environ["HUGGINGFACEHUB_API_TOKEN"] = os.getenv('HUGGINGFACEHUB_API_TOKEN')
+# repo_id = os.getenv('repo_id')
 
 app = FastAPI()
 
-@app.get('/call_chat_model/{input_prompt}')
-def call_chat_model(input_prompt: str) -> str:
+@app.get('/call_gemini_chat_model/{input_prompt}')
+def call_gemini_chat_model(input_prompt: str) -> str:
     print(input_prompt)
     try:
         model = ChatGoogleGenerativeAI(
@@ -38,3 +44,23 @@ def call_chat_model(input_prompt: str) -> str:
         return assistant_msg.text
     except:
         raise HTTPException(status_code=404, detail="Some Error Happened....")
+    
+
+@app.get('/call_hugging_face_chat_model/{input_prompt}')
+def call_hugging_face_model(input_prompt: str):
+    hf_llm = HuggingFaceEndpoint(
+        # repo_id="deepseek-ai/DeepSeek-R1-0528",
+        repo_id="google/gemma-3-4b-it",
+        max_length=50,
+        temperature=0.4,
+        huggingfacehub_api_token=HUGGINGFACEHUB_API_TOKEN,
+        provider="auto", 
+    )
+
+    chat = ChatHuggingFace(llm=hf_llm) 
+
+    response = chat.invoke([
+        HumanMessage(content=input_prompt)
+    ])
+
+    return {"response": response.content}
