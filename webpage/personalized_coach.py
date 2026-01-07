@@ -1,15 +1,11 @@
 import streamlit as st
-from typing import Dict
 # Once langchain and fastapi are implemented, remove this
 import numpy as np
 import time
 import os
 import datetime
-import requests
 from dotenv import load_dotenv
-import base64
-import streamlit.components.v1 as components
-import mimetypes
+import boto3
 
 load_dotenv()
 
@@ -27,6 +23,18 @@ if os.path.exists(chat_media_path) == False:
 
 img_media_path = os.path.join(os.getcwd(), "webpage", "utility", "chat_media", "images")
 vid_media_path = os.path.join(os.getcwd(), "webpage", "utility", "chat_media", "videos")
+
+s3 = boto3.client('s3', aws_access_key_id=os.getenv("ACCESS_KEY"),
+    aws_secret_access_key=os.getenv("SECRET_KEY"),
+    region_name=os.getenv("REGION_NAME"))
+BUCKET_NAME = os.getenv('s3_bucket')
+
+def get_presigned_url(s3_key_file_path, expires=3600):
+    return s3.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": BUCKET_NAME, "Key": s3_key_file_path},
+        ExpiresIn=expires,
+    )
 
 
 st.markdown("""
@@ -111,20 +119,6 @@ def get_stream_obj(input: str):
         yield ch
         time.sleep(0.1)
 
-def media_to_base64(path):
-    mime_type, _ = mimetypes.guess_type(path)
-    with open(path, "rb") as f:
-        encoded = base64.b64encode(f.read()).decode()
-    return f"data:{mime_type};base64,{encoded}"
-
-# Kept for testing purpose
-# img_path = os.path.join(os.getcwd(), "webpage", "Utility", "chat_media", "images", "test.jpg")
-# img_base64 = img_to_base64(img_path)
-# st.markdown(
-#     f'<img src="{img_base64}" />',
-#     unsafe_allow_html=True
-# )
-
 
 st.title("Your Personalized Coach")
 with st.container(border=True):
@@ -146,15 +140,14 @@ with st.container(border=True):
 
         # 1️⃣ MEDIA FIRST (on top)
         for media in media_files:
-            print(media)
-            # filename = os.path.basename(media)
-            img_base64 = media_to_base64(media)
-            if media.lower().endswith((".jpg", ".jpeg", ".png")):
-                bubble_html += f'<img src="{img_base64}" style="width:80%; border-radius:12px; margin-bottom:6px;" />'                    
+            media_url = get_presigned_url(media)
+            print(media_url)
 
-            elif media.lower().endswith(".mp4"):
-                video_base64 = media_to_base64(media)
-                bubble_html += f'<video width="200" controls><source src="{video_base64}" type="video/mp4"></video>'
+            if any(ext in media.lower() for ext in [".jpg", ".jpeg", ".png"]):
+                bubble_html += f'<img src="{media_url}" style="width:80%; border-radius:12px; margin-bottom:6px;" />'                    
+
+            elif ".mp4" in media.lower():
+                bubble_html += f'<video width="200" controls><source src="{media_url}" type="video/mp4"></video>'
 
         # 2️⃣ TEXT CAPTION (below media)
         if content:
@@ -197,20 +190,26 @@ with st.container(border=True):
             username = np.random.randint(100000, 999999)
             
             if file.name.lower().endswith(('.mp4')):
-                vid_save_filepath = os.path.join(vid_media_path, str(username) + '_' + str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')) + '.mp4')
-                with open(vid_save_filepath, 'wb') as f:
-                    file.seek(0)
-                    f.write(file.read())
-                f.close()
-                media_file_path.append(vid_save_filepath)
+                file_name = str(username) + '_' + str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')) + '.mp4'
+                vid_s3_path = "chat_media/videos/" + file_name
+                s3.upload_fileobj(
+                    file, 
+                    BUCKET_NAME, 
+                    vid_s3_path, 
+                    ExtraArgs={"ContentType": file.type}
+                )
+                media_file_path.append(vid_s3_path)
             
             elif  file.name.lower().endswith(('jpg', 'jpeg', 'png')):
-                img_save_filepath = os.path.join(img_media_path, str(username) + '_' + str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')) + '.jpg')
-                with open(img_save_filepath, 'wb') as f:
-                    file.seek(0)
-                    f.write(file.read())
-                f.close()
-                media_file_path.append(img_save_filepath)
+                file_name = str(username) + '_' + str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')) + '.jpg'
+                img_s3_path = "chat_media/images/" + file_name
+                s3.upload_fileobj(
+                    file, 
+                    BUCKET_NAME, 
+                    img_s3_path, 
+                    ExtraArgs={"ContentType": file.type}
+                )
+                media_file_path.append(img_s3_path)
         
         st.session_state.messages.append({'role': 'user', 'content': user_msg.text, 'media_file_path': media_file_path})
         st.session_state.messages.append({'role': 'assistant', 'content': asst_msg, 'media_file_path': []})
