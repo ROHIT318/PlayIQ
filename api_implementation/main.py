@@ -1,12 +1,12 @@
 from fastapi import FastAPI, HTTPException
-from typing import Dict
 from langchain_google_genai import ChatGoogleGenerativeAI
-import numpy as np
 import os
 from dotenv import load_dotenv
 from langchain_huggingface import HuggingFaceEndpoint
 from langchain_huggingface import ChatHuggingFace
 from langchain_core.messages import HumanMessage
+from api_implementation.db_details.schemas import ChatDetailsModel, UserAccountModel
+from api_implementation.db_details.db_connection import ChatDetails, UserAccount, engine
 
 load_dotenv()
 os.environ["GOOGLE_API_KEY"] = os.getenv('GOOGLE_API_KEY')
@@ -15,6 +15,19 @@ os.environ["HUGGINGFACEHUB_API_TOKEN"] = os.getenv('HUGGINGFACEHUB_API_TOKEN')
 # repo_id = os.getenv('repo_id')
 
 app = FastAPI()
+
+# Create table in database
+UserAccount.metadata.create_all(bind=engine)
+ChatDetails.metadata.create_all(bind=engine)
+
+@app.post('/save_chat/')
+def save_chat(chat_details: ChatDetailsModel):
+    pass
+
+@app.post('/save_user/')
+def save_user(user_account: UserAccountModel):
+    pass
+
 
 @app.get('/call_gemini_chat_model/{input_prompt}')
 def call_gemini_chat_model(input_prompt: str) -> str:
