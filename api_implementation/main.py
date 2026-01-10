@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from langchain_google_genai import ChatGoogleGenerativeAI
 import os
 from dotenv import load_dotenv
@@ -6,7 +6,9 @@ from langchain_huggingface import HuggingFaceEndpoint
 from langchain_huggingface import ChatHuggingFace
 from langchain_core.messages import HumanMessage
 from api_implementation.db_details.schemas import ChatDetailsModel, UserAccountModel
-from api_implementation.db_details.db_connection import ChatDetails, UserAccount, engine
+from api_implementation.db_details.db_connection import ChatDetails, UserAccount, engine, SessionCreator
+from datetime import datetime
+from sqlalchemy.orm import Session
 
 load_dotenv()
 os.environ["GOOGLE_API_KEY"] = os.getenv('GOOGLE_API_KEY')
@@ -20,9 +22,77 @@ app = FastAPI()
 UserAccount.metadata.create_all(bind=engine)
 ChatDetails.metadata.create_all(bind=engine)
 
+# Generator for db connection
+def db_conn():
+    try:
+        db = SessionCreator()
+        yield db
+        db.commit()
+    finally:
+        db.close()
+
+# Save chat details in relational database
 @app.post('/save_chat/')
-def save_chat(chat_details: ChatDetailsModel):
-    pass
+def save_chat(chat_details: ChatDetailsModel, db_conn: Session = Depends(db_conn)):
+    # print(chat_details)
+    try:
+        # print(chat_details.chat_media)
+        db_conn.add(ChatDetails(chat_id=chat_details.chat_id, user_id=chat_details.user_id, chat_name=chat_details.chat_name, chat_msg=chat_details.chat_msg, chat_media=chat_details.chat_media, created_on=datetime.utcnow()))
+    except:
+        raise HTTPException(status_code=404, detail="Some Error Happened !!")
+
+# Get specific chat details from relational database
+@app.post('/get_chat/')
+def get_chat(user_id: str, chat_name: str, db_conn: Session = Depends(db_conn)):
+    # print(chat_details)
+    try:
+        chat_msgs = db_conn.query(ChatDetails).filter(ChatDetails.user_id==user_id, ChatDetails.chat_name==chat_name).all()
+        if len(chat_msgs)==0:
+            return {'details': 'No messages'}
+        else:
+            return chat_msgs
+    except:
+        raise HTTPException(status_code=404, detail="Some Error Happened !!")
+    
+# Get all chat details from relational database
+@app.post('/get_all_chat/')
+def get_all_chat(db_conn: Session = Depends(db_conn)):
+    # print(chat_details)
+    try:
+        chat_msgs_obj = db_conn.query(ChatDetails).all()
+        if chat_msgs_obj is None:
+            return {'details': 'No messages'}
+        else:
+            return chat_msgs_obj
+    except:
+        raise HTTPException(status_code=404, detail="Some Error Happened !!")
+    
+# Get chat details from relational database
+@app.delete('/delete_chat/')
+def delete_chat(chat_id: str, user_id: str, chat_name: str, db_conn: Session = Depends(db_conn)):
+    try:
+        chat_msg = db_conn.query(ChatDetails).filter(ChatDetails.chat_id==chat_id, ChatDetails.user_id==user_id, ChatDetails.chat_name==chat_name).first()
+        # print(chat_msg)
+        if chat_msg is None:
+            return {'details': 'No messages'}
+        else:
+            db_conn.delete(chat_msg)
+    except:
+        raise HTTPException(status_code=404, detail="Some Error Happened !!")
+
+# Update existing messages(only text, not media details) in chat message
+@app.put('/update_chat/')
+def update_chat(chat_id: str, user_id: str, updated_chat_msg: str, db_conn: Session = Depends(db_conn)):
+    try:
+        chat_msg_obj = db_conn.query(ChatDetails).filter(ChatDetails.chat_id==chat_id, ChatDetails.user_id==user_id)
+        if chat_msg_obj is not None:
+            chat_msg_obj.update({
+                ChatDetails.chat_msg: updated_chat_msg
+            })
+        else:
+            return {'details': 'No message exists !!'}
+    except:
+        raise HTTPException(status_code=404, detail="Some Error Happened !!")
 
 @app.post('/save_user/')
 def save_user(user_account: UserAccountModel):
