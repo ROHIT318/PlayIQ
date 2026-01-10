@@ -9,3 +9,10 @@ This project will help individual athletes and sports team for improving there p
 <img src="wireframes\personalised_coach-wireframe.jpg">
 4. DB structure for web app.
 <img src="wireframes\erd.jpg">
+-------------------------------------------------------------------------------------------------
+Future steps to be implemented:
+1. CRUD using fastapi in postgres AWS. - DONE
+2. Connecting fastapi with chat app. - 11/1/2025
+3. Establish authentication using fastapi. - 11/1/2025
+4. Connecting fastapi authentication with chat app. - 11/1/2025
+5. Improve frontend of web app. - 12/1/2025
