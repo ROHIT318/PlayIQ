@@ -1,4 +1,5 @@
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, DateTime
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from sqlalchemy import create_engine
 from sqlalchemy_utils import PasswordType
@@ -30,7 +31,7 @@ class ChatDetails(Base):
     user_id = Column(String)
     chat_name = Column(String)
     chat_msg = Column(String)
-    chat_media = Column(String)
+    chat_media = Column(ARRAY(String))
     created_on = Column(DateTime, default=datetime.utcnow)
 
 
