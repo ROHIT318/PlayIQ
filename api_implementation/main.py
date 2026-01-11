@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from langchain_huggingface import HuggingFaceEndpoint
 from langchain_huggingface import ChatHuggingFace
 from langchain_core.messages import HumanMessage
-from api_implementation.db_details.schemas import ChatDetailsModel, UserAccountModel
+from api_implementation.db_details.schemas import ChatDetailsModel, UserAccountModel, GetChatModel, SaveChatModel
 from api_implementation.db_details.db_connection import ChatDetails, UserAccount, engine, SessionCreator
 from datetime import datetime
 from sqlalchemy.orm import Session
@@ -33,26 +33,26 @@ def db_conn():
 
 # Save chat details in relational database
 @app.post('/save_chat/')
-def save_chat(chat_details: ChatDetailsModel, db_conn: Session = Depends(db_conn)):
+def save_chat(chat_details: SaveChatModel, db_conn: Session = Depends(db_conn)):
     # print(chat_details)
     try:
         # print(chat_details.chat_media)
-        db_conn.add(ChatDetails(chat_id=chat_details.chat_id, user_id=chat_details.user_id, chat_name=chat_details.chat_name, chat_msg=chat_details.chat_msg, chat_media=chat_details.chat_media, created_on=datetime.utcnow()))
+        db_conn.add(ChatDetails(user_id=chat_details.user_id, role=chat_details.role, chat_name=chat_details.chat_name, chat_msg=chat_details.chat_msg, media_file_path=chat_details.chat_media))
     except:
         raise HTTPException(status_code=404, detail="Some Error Happened !!")
 
 # Get specific chat details from relational database
 @app.post('/get_chat/')
-def get_chat(user_id: str, chat_name: str, db_conn: Session = Depends(db_conn)):
+def get_chat(get_chat_model: GetChatModel, db_conn: Session = Depends(db_conn)):
     # print(chat_details)
-    try:
-        chat_msgs = db_conn.query(ChatDetails).filter(ChatDetails.user_id==user_id, ChatDetails.chat_name==chat_name).all()
-        if len(chat_msgs)==0:
-            return {'details': 'No messages'}
-        else:
-            return chat_msgs
-    except:
-        raise HTTPException(status_code=404, detail="Some Error Happened !!")
+    # try:
+    chat_msgs = db_conn.query(ChatDetails).filter(ChatDetails.user_id==get_chat_model.user_id, ChatDetails.chat_name==get_chat_model.chat_name).all()
+    if len(chat_msgs)==0:
+        return {'details': 'No messages'}
+    else:
+        return chat_msgs
+    # except:
+    #     raise HTTPException(status_code=404, detail="Some Error Happened !!")
     
 # Get all chat details from relational database
 @app.post('/get_all_chat/')

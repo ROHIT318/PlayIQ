@@ -27,12 +27,13 @@ class Base(DeclarativeBase):
 class ChatDetails(Base):
     __tablename__ = "ChatDetails"
 
-    chat_id = Column(String, primary_key=True)
+    chat_id = Column(Integer, primary_key=True, autoincrement=True, unique=True)
     user_id = Column(String)
+    role = Column(String)
     chat_name = Column(String)
     chat_msg = Column(String)
-    chat_media = Column(ARRAY(String))
-    created_on = Column(DateTime, default=datetime.utcnow)
+    media_file_path = Column(ARRAY(String))
+    created_on = Column(DateTime, default=datetime.now)
 
 
 class UserAccount(Base):

@@ -6,6 +6,8 @@ import os
 import datetime
 from dotenv import load_dotenv
 import boto3
+import requests
+import json
 
 load_dotenv()
 
@@ -104,6 +106,9 @@ st.markdown("""
 if "messages" not in st.session_state:
     st.session_state.messages = [{'role': 'assistant', 'content': 'Hello, How can I help you?', 'media_file_path': []}]
 
+if "username" not in st.session_state:
+    st.session_state.username = np.random.randint(100000, 999999)
+
 def call_chat_model(msg: str) -> str:
     res = [
         "This is answer to q1",
@@ -131,9 +136,15 @@ with st.container(border=True):
 
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
 
-    for msg in st.session_state.messages:
+    # -- fix this
+    st.session_state.username = '1'
+    fetch_msg_payload = {'user_id': st.session_state.username, 'chat_name': 'test'}
+    messages = requests.post(f'{BASE_URL}/get_chat/', json=fetch_msg_payload).content.decode('utf-8')
+    messages = json.loads(messages)
+    print(messages)
+    for msg in messages:
         role = msg["role"]
-        content = msg["content"]
+        content = msg["chat_msg"]
         media_files = msg.get("media_file_path", [])
 
         bubble_html = ""
@@ -186,11 +197,9 @@ with st.container(border=True):
 
 
         media_file_path = [] 
-        for file in user_msg["files"]:
-            username = np.random.randint(100000, 999999)
-            
+        for file in user_msg["files"]:            
             if file.name.lower().endswith(('.mp4')):
-                file_name = str(username) + '_' + str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')) + '.mp4'
+                file_name = str(st.session_state.username) + '_' + str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')) + '.mp4'
                 vid_s3_path = "chat_media/videos/" + file_name
                 s3.upload_fileobj(
                     file, 
@@ -201,7 +210,7 @@ with st.container(border=True):
                 media_file_path.append(vid_s3_path)
             
             elif  file.name.lower().endswith(('jpg', 'jpeg', 'png')):
-                file_name = str(username) + '_' + str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')) + '.jpg'
+                file_name = str(st.session_state.username) + '_' + str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')) + '.jpg'
                 img_s3_path = "chat_media/images/" + file_name
                 s3.upload_fileobj(
                     file, 
@@ -211,8 +220,16 @@ with st.container(border=True):
                 )
                 media_file_path.append(img_s3_path)
         
-        st.session_state.messages.append({'role': 'user', 'content': user_msg.text, 'media_file_path': media_file_path})
-        st.session_state.messages.append({'role': 'assistant', 'content': asst_msg, 'media_file_path': []})
+        # For testing purpose. DO NOT DELETE.
+        # st.session_state.messages.append({'role': 'user', 'content': user_msg.text, 'media_file_path': media_file_path})
+        # st.session_state.messages.append({'role': 'assistant', 'content': asst_msg, 'media_file_path': []})
+
+        # -- fix this role
+        payload = {'user_id': st.session_state.username, 'role': 'user', 'chat_name': 'test', 'chat_msg': user_msg.text, 'chat_media': media_file_path}
+        requests.post(f'{BASE_URL}/save_chat/', data=payload)
+        # -- fix this role
+        payload = {'user_id': st.session_state.username, 'role': 'assistant', 'chat_name': 'test', 'chat_msg': asst_msg, 'chat_media': media_file_path}
+        requests.post(f'{BASE_URL}/save_chat/', data=payload)
 
         # time.sleep(5)
         st.rerun()
