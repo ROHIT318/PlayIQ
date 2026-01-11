@@ -149,7 +149,7 @@ with st.container(border=True):
 
         bubble_html = ""
 
-        # 1️⃣ MEDIA FIRST (on top)
+        # MEDIA FIRST (on top)
         for media in media_files:
             media_url = get_presigned_url(media)
             print(media_url)
@@ -160,7 +160,7 @@ with st.container(border=True):
             elif ".mp4" in media.lower():
                 bubble_html += f'<video width="200" controls><source src="{media_url}" type="video/mp4"></video>'
 
-        # 2️⃣ TEXT CAPTION (below media)
+        # TEXT CAPTION (below media)
         if content:
             bubble_html += f"<div>{content}</div>"
 
@@ -226,10 +226,10 @@ with st.container(border=True):
 
         # -- fix this role
         payload = {'user_id': st.session_state.username, 'role': 'user', 'chat_name': 'test', 'chat_msg': user_msg.text, 'chat_media': media_file_path}
-        requests.post(f'{BASE_URL}/save_chat/', data=payload)
+        requests.post(f'{BASE_URL}/save_chat/', json=payload)
         # -- fix this role
         payload = {'user_id': st.session_state.username, 'role': 'assistant', 'chat_name': 'test', 'chat_msg': asst_msg, 'chat_media': media_file_path}
-        requests.post(f'{BASE_URL}/save_chat/', data=payload)
+        requests.post(f'{BASE_URL}/save_chat/', json=payload)
 
         # time.sleep(5)
         st.rerun()

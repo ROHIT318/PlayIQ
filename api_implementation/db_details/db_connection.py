@@ -13,8 +13,14 @@ DB_USERNAME = os.getenv('DB_USERNAME')
 DB_PSWD = os.getenv('DB_PSWD')
 DB_NAME = os.getenv('DB_NAME')
 DB_ENDPOINT = os.getenv('DB_ENDPOINT')
+CURR_ENV = os.getenv('CURR_ENV')
 
-DB_URL = f"postgresql://{DB_USERNAME}:{DB_PSWD}@{DB_ENDPOINT}/{DB_NAME}"
+if CURR_ENV=='DEVELOPMENT':
+    DB_LOCALHOST_ENDPOINT = os.getenv('DB_LOCALHOST_ENDPOINT')
+    DB_LOCALHOST_PORT = os.getenv('DB_LOCALHOST_PORT')
+    DB_URL = f"postgresql://{DB_USERNAME}:{DB_PSWD}@{DB_LOCALHOST_ENDPOINT}:{DB_LOCALHOST_PORT}/{DB_NAME}"
+else:
+    DB_URL = f"postgresql://{DB_USERNAME}:{DB_PSWD}@{DB_ENDPOINT}/{DB_NAME}"
 
 engine = create_engine(DB_URL)
 
