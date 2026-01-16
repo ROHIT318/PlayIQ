@@ -147,3 +147,12 @@ def call_hugging_face_model(input_prompt: str):
     ])
 
     return {"response": response.content}
+
+
+# 1. Save or sign-up user
+@app.post("/signup/")
+def user_signup():
+    
+
+
+# 2. Login user

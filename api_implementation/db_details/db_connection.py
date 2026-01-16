@@ -47,4 +47,4 @@ class UserAccount(Base):
 
     user_id = Column(String, primary_key=True)
     mail = Column(String)
-    pswd = Column(PasswordType(schemes=['pbkdf2_sha512']))
+    pswd = Column(String)
