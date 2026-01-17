@@ -28,3 +28,10 @@ class SaveChatModel(BaseModel):
     chat_name: str
     chat_msg: str
     chat_media: List[str]
+
+# User authentication
+class UserModel(BaseModel):
+    user_id: str
+    mail: EmailStr
+    is_active: bool
+    created_on: datetime

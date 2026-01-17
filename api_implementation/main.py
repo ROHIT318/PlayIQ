@@ -67,7 +67,7 @@ def get_all_chat(db_conn: Session = Depends(db_conn)):
     except:
         raise HTTPException(status_code=404, detail="Some Error Happened !!")
     
-# Get chat details from relational database
+# delete chat details from relational database
 @app.delete('/delete_chat/')
 def delete_chat(chat_id: str, user_id: str, chat_name: str, db_conn: Session = Depends(db_conn)):
     try:
@@ -147,12 +147,3 @@ def call_hugging_face_model(input_prompt: str):
     ])
 
     return {"response": response.content}
-
-
-# 1. Save or sign-up user
-@app.post("/signup/")
-def user_signup():
-    
-
-
-# 2. Login user
