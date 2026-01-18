@@ -35,3 +35,7 @@ class UserModel(BaseModel):
     mail: EmailStr
     is_active: bool
     created_on: datetime
+
+class SignupUserModel(BaseModel):
+    mail: EmailStr
+    pswd: str
