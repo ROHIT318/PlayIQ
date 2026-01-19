@@ -7,6 +7,9 @@ import jwt
 from pwdlib import PasswordHash
 from dotenv import load_dotenv
 import os
+from api_implementation.db_details.db_connection import UserAccount, engine, SessionCreator
+from api_implementation.main import db_conn
+from sqlalchemy.orm import Session
 
 app = FastAPI()
 
@@ -108,14 +111,21 @@ def get_all_user():
 
 
 @app.post('/signup_user')
-def signup_user(signup_user: SignupUserModel):
+def signup_user(signup_user: SignupUserModel, db_conn: Session = Depends(db_conn)):
     # print(signup_user)
     hashed_password = get_password_hash(signup_user.pswd)
     # save here in database
-    user_db.append({'user_id': signup_user.mail, 'mail': signup_user.mail, 'password': hashed_password, 'token': hashed_password})
+    # user_db.append({'user_id': signup_user.mail, 'mail': signup_user.mail, 'password': hashed_password, 'token': hashed_password})
+    db_conn.add(UserAccount(user_id=signup_user.mail, mail=signup_user.mail, pswd=hashed_password, is_active=True))
     return {"detail": "Profile created successfuly...."}
 
 @app.delete('/delete_user')
-def delete_user():
+def delete_user(user_id: str, db_conn: Session = Depends(db_conn)):
     # do not delete user in database instead deactivate it. 
-    pass
+    try:
+        user_obj = db_conn.query().filter(user_id=user_id)
+        if user_obj is not None:
+            user_obj.update({})
+        return {'detail': 'User not found'}
+    except:
+        raise HTTPException(status_code=401, detail="can't delete user.")
