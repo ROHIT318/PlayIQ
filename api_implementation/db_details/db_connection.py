@@ -48,3 +48,4 @@ class UserAccount(Base):
     user_id = Column(String, primary_key=True)
     mail = Column(String)
     pswd = Column(String)
+    is_active = Column(String)
