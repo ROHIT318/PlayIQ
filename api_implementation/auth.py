@@ -50,19 +50,22 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl = "token")
 ph = PasswordHash.recommended()
 
 @app.get('/fetch_resource')
-def fetch_resource(token: Annotated[str, Depends(oauth2_scheme)]):
-    # try:
-    decoded_token = jwt.decode(token, SECRET_KEY, ALGORITHM)
-    username = decoded_token['sub']
-    exp = decoded_token['exp']
-    expiry_time = datetime.fromtimestamp(exp, tz=timezone.utc)
-    current_time = datetime.now(timezone.utc)
-    if current_time>expiry_time:
-        return {'detail': 'Please re-login, token expired....'}
-    else:
-        return {'data': resource, 'username': username, 'exp': expiry_time}
-    # except:
-    #     raise HTTPException(status_code=401, detail='User not found, login again....')
+def fetch_resource(token: Annotated[str, Depends(oauth2_scheme)], db_conn: Session = Depends(db_conn)):
+    try:
+        decoded_token = jwt.decode(token, SECRET_KEY, ALGORITHM)
+        username = decoded_token['sub']
+        exp = decoded_token['exp']
+        expiry_time = datetime.fromtimestamp(exp, tz=timezone.utc)
+        current_time = datetime.now(timezone.utc)
+        # print(current_time, expiry_time)
+        is_active = db_conn.query(UserAccount).filter(UserAccount.user_id==username).first()
+        print(is_active)
+        if current_time<expiry_time:
+            return {'detail': 'Please re-login, token expired....'}
+        else:
+            return {'data': resource, 'username': username, 'exp': expiry_time}
+    except:
+        raise HTTPException(status_code=401, detail='User not found, login again....')
 
 def get_password_hash(password):
     return ph.hash(password)
@@ -112,20 +115,35 @@ def get_all_user():
 
 @app.post('/signup_user')
 def signup_user(signup_user: SignupUserModel, db_conn: Session = Depends(db_conn)):
-    # print(signup_user)
-    hashed_password = get_password_hash(signup_user.pswd)
-    # save here in database
-    # user_db.append({'user_id': signup_user.mail, 'mail': signup_user.mail, 'password': hashed_password, 'token': hashed_password})
-    db_conn.add(UserAccount(user_id=signup_user.mail, mail=signup_user.mail, pswd=hashed_password, is_active=True))
-    return {"detail": "Profile created successfuly...."}
+    try:
+        hashed_password = get_password_hash(signup_user.pswd)
+        # save here in database
+        # user_db.append({'user_id': signup_user.mail, 'mail': signup_user.mail, 'password': hashed_password, 'token': hashed_password})
+        db_conn.add(UserAccount(user_id=signup_user.mail, mail=signup_user.mail, pswd=hashed_password, is_active=True))
+        return {"detail": "Profile created successfuly...."}
+    except:
+        raise HTTPException(status_code=401, detail="User can't be created....")
 
-@app.delete('/delete_user')
-def delete_user(user_id: str, db_conn: Session = Depends(db_conn)):
+@app.post('/deactivate_user')
+def deactivate_user(token: Annotated[str, Depends(oauth2_scheme)], db_conn: Session = Depends(db_conn)):
     # do not delete user in database instead deactivate it. 
     try:
-        user_obj = db_conn.query().filter(user_id=user_id)
-        if user_obj is not None:
-            user_obj.update({})
-        return {'detail': 'User not found'}
+        decoded_token = jwt.decode(token, SECRET_KEY, ALGORITHM)
+        username = decoded_token['sub']
+        exp = decoded_token['exp']
+        expiry_time = datetime.fromtimestamp(exp, tz=timezone.utc)
+        current_time = datetime.now(timezone.utc)
+        print(current_time, expiry_time)
+        if current_time<expiry_time:
+            user_obj = db_conn.query(UserAccount).filter(UserAccount.user_id==username)
+            print(user_obj)
+            if user_obj is not None:
+                user_obj.update({UserAccount.is_active: False})
+                return {'detail': 'User account deactivated....'}
+            return {'detail': 'User not found....'}
+        else:
+            raise HTTPException(status_code=401, detail='Login session ended, please re-login....')
     except:
-        raise HTTPException(status_code=401, detail="can't delete user.")
+        raise HTTPException(status_code=401, detail="can't deactivate user....")
+    
+# create account status function and using it activate or deactivate user account.
