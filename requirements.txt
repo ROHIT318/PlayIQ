@@ -62,7 +62,6 @@ jsonpatch==1.33
 jsonpointer==3.0.0
 jsonschema==4.25.1
 jsonschema-specifications==2025.9.1
-jwt==1.4.0
 langchain==1.2.0
 langchain-classic==1.0.1
 langchain-core==1.2.6
@@ -106,6 +105,7 @@ pydantic==2.12.5
 pydantic_core==2.41.5
 pydeck==0.9.1
 Pygments==2.19.2
+PyJWT==2.10.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.1
 python-multipart==0.0.21
