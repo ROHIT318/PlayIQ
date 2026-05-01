@@ -1,6 +1,8 @@
 # PlayIQ
 This project will help individual athletes and sports team for improving there performance.
 
+---
+
 1. High level architecture of the system.
 <img src="wireframes\high-level-architecture.jpg">
 2. Front end for creating short/cut videos out of an entire video.
@@ -9,7 +11,9 @@ This project will help individual athletes and sports team for improving there p
 <img src="wireframes\personalised_coach-wireframe.jpg">
 4. DB structure for web app.
 <img src="wireframes\erd.jpg">
-------
+
+---
+
 Future steps to be implemented:
 1. CRUD using fastapi in postgres AWS. - DONE
 2. Connecting fastapi with chat app. 
